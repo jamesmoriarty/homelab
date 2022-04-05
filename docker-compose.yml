@@ -54,6 +54,21 @@ services:
       - "traefik.http.routers.portainer.tls.certresolver=leresolver"
       - "traefik.http.services.portainer.loadbalancer.server.port=9000"
 
+  transmission:
+    image: lscr.io/linuxserver/transmission
+    container_name: transmission
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - "./data:/downloads:rw"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.transmission.rule=Host(`transmission.${DOMAIN}`)"
+      - "traefik.http.routers.transmission.entrypoints=websecure"
+      - "traefik.http.routers.transmission.tls.certresolver=leresolver"
+      - "traefik.http.services.transmission.loadbalancer.server.port=9091"
+
   minidlna:
     networks:
       lan:
