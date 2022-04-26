@@ -80,12 +80,20 @@ services:
         ipv4_address: "${NETWORK_DLNA_IP}"
     restart: always
     image: "vladgh/minidlna:1.2.0"
+    container_name: minidlna
     environment:
       - "PUID=1000"
       - "PGID=1000"
       - "MINIDLNA_MEDIA_DIR=/media"
     volumes:
       - "./data:/media:ro"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.minidlna.rule=Host(`minidlna.${DOMAIN}`)"
+      - "traefik.http.routers.minidlna.entrypoints=web"
+      # BUGFIX: no url: https://doc.traefik.io/traefik/v2.2/routing/providers/docker/#services
+      - "traefik.http.services.minidlna.loadbalancer.server.url=http://${NETWORK_DLNA_IP}:8200"
+      - "traefik.http.services.minidlna.loadbalancer.server.port=8200"
 
 networks:
   lan:
