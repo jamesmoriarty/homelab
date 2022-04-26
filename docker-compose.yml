@@ -55,7 +55,7 @@ services:
       - "traefik.http.services.portainer.loadbalancer.server.port=9000"
 
   transmission:
-    image: lscr.io/linuxserver/transmission
+    image: "lscr.io/linuxserver/transmission:3.00-r5-ls118"
     container_name: transmission
     environment:
       - PUID=1000
@@ -68,6 +68,10 @@ services:
       - "traefik.http.routers.transmission.entrypoints=websecure"
       - "traefik.http.routers.transmission.tls.certresolver=leresolver"
       - "traefik.http.services.transmission.loadbalancer.server.port=9091"
+
+  cloudflared:
+    image: cloudflare/cloudflared:2022.3.4 
+    command: "tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}"
 
   minidlna:
     networks:
