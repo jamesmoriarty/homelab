@@ -2,6 +2,7 @@ version: "3.3"
 
 services:
   traefik:
+    restart: always
     image: "traefik:v2.6.3"
     container_name: "traefik"
     command:
@@ -16,9 +17,12 @@ services:
       - "--certificatesresolvers.leresolver.acme.dnsChallenge.provider=route53"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN}`)"
-      - "traefik.http.routers.dashboard.entrypoints=websecure"
-      - "traefik.http.routers.dashboard.tls.certresolver=leresolver"
+      # - "traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN}`)"
+      # - "traefik.http.routers.dashboard.entrypoints=websecure"
+      # - "traefik.http.routers.dashboard.tls.certresolver=leresolver"
+      # - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.${CF_DOMAIN}`)"
+      - "traefik.http.routers.dashboard.entrypoints=web"
       - "traefik.http.routers.dashboard.service=api@internal"
     ports:
       - "${NETWORK_DOCKER_IP}:80:80"
@@ -32,6 +36,7 @@ services:
       - "AWS_HOSTED_ZONE_ID=${AWS_HOSTED_ZONE_ID}"
 
   whoami:
+    restart: always
     image: "traefik/whoami"
     container_name: "whoami-service"
     labels:
@@ -49,12 +54,16 @@ services:
       - "portainer_data:/data"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.portainer.rule=Host(`portainer.${DOMAIN}`)"
-      - "traefik.http.routers.portainer.entrypoints=websecure"
-      - "traefik.http.routers.portainer.tls.certresolver=leresolver"
-      - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+      # - "traefik.http.routers.portainer.rule=Host(`portainer.${DOMAIN}`)"
+      # - "traefik.http.routers.portainer.entrypoints=websecure"
+      # - "traefik.http.routers.portainer.tls.certresolver=leresolver"
+      # - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+      - "traefik.http.routers.cf-portainer.rule=Host(`portainer.${CF_DOMAIN}`)"
+      - "traefik.http.routers.cf-portainer.entrypoints=web"
+      - "traefik.http.services.cf-portainer.loadbalancer.server.port=9000"
 
   transmission:
+    restart: always
     image: "lscr.io/linuxserver/transmission:3.00-r5-ls118"
     container_name: transmission
     environment:
@@ -64,21 +73,25 @@ services:
       - "./data:/downloads:rw"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.transmission.rule=Host(`transmission.${DOMAIN}`)"
-      - "traefik.http.routers.transmission.entrypoints=websecure"
-      - "traefik.http.routers.transmission.tls.certresolver=leresolver"
-      - "traefik.http.services.transmission.loadbalancer.server.port=9091"
+      # - "traefik.http.routers.transmission.rule=Host(`transmission.${DOMAIN}`)"
+      # - "traefik.http.routers.transmission.entrypoints=websecure"
+      # - "traefik.http.routers.transmission.tls.certresolver=leresolver"
+      # - "traefik.http.services.transmission.loadbalancer.server.port=9091"
+      - "traefik.http.routers.cf-transmission.rule=Host(`transmission.${CF_DOMAIN}`)"
+      - "traefik.http.services.cf-transmission.loadbalancer.server.port=9091"
+      - "traefik.http.routers.cf-transmission.entrypoints=web"
 
   cloudflared:
+    restart: always
     container_name: cloudflared
     image: cloudflare/cloudflared:2022.3.4
     command: "tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}"
 
   minidlna:
+    restart: always
     networks:
       lan:
         ipv4_address: "${NETWORK_DLNA_IP}"
-    restart: always
     image: "vladgh/minidlna:1.2.0"
     container_name: minidlna
     environment:
@@ -87,13 +100,12 @@ services:
       - "MINIDLNA_MEDIA_DIR=/media"
     volumes:
       - "./data:/media:ro"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.minidlna.rule=Host(`minidlna.${DOMAIN}`)"
-      - "traefik.http.routers.minidlna.entrypoints=web"
-      # BUGFIX: no url: https://doc.traefik.io/traefik/v2.2/routing/providers/docker/#services
-      - "traefik.http.services.minidlna.loadbalancer.server.url=http://${NETWORK_DLNA_IP}:8200"
-      - "traefik.http.services.minidlna.loadbalancer.server.port=8200"
+    # labels:
+      # - "traefik.enable=true"
+      # - "traefik.http.routers.minidlna.rule=Host(`minidlna.${DOMAIN}`)"
+      # - "traefik.http.routers.minidlna.entrypoints=web"
+      # - "traefik.http.services.minidlna.loadbalancer.server.url=http://${NETWORK_DLNA_IP}:8200" # BUGFIX: no url: https://doc.traefik.io/traefik/v2.2/routing/providers/docker/#services
+      # - "traefik.http.services.minidlna.loadbalancer.server.port=8200"
 
 networks:
   lan:
