@@ -1,0 +1,10 @@
+version: "3.3"
+
+services:
+  whoami:
+    restart: always
+    image: "traefik/whoami"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami.rule=Host(`whoami.${NETWORK_DOCKER_IP}.nip.io`)"
+      - "traefik.http.routers.whoami.entrypoints=web"

@@ -1,0 +1,16 @@
+version: "3.3"
+
+services:
+  transmission:
+    restart: always
+    image: "lscr.io/linuxserver/transmission:3.00-r5-ls118"
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - "./data:/downloads:rw"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cf-transmission.rule=Host(`transmission.${CF_DOMAIN}`)"
+      - "traefik.http.services.cf-transmission.loadbalancer.server.port=9091"
+      - "traefik.http.routers.cf-transmission.entrypoints=web"
