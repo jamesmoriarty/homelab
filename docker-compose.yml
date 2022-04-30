@@ -2,8 +2,10 @@ version: "3.3"
 
 services:
   traefik:
-    restart: always
+    restart: unless-stopped
     image: "traefik:v2.6.3"
+    networks:
+      - "cloudflared"
     container_name: "traefik"
     command:
       - "--api.dashboard=true"
@@ -31,9 +33,56 @@ services:
       - "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}"
       - "AWS_HOSTED_ZONE_ID=${AWS_HOSTED_ZONE_ID}"
 
+  cloudflared:
+    restart: unless-stopped
+    image: cloudflare/cloudflared:2022.4.1
+    networks:
+      - "cloudflared"
+    container_name: cloudflared
+
+    command: "tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}"
+
+  whoami:
+    restart: unless-stopped
+    image: "traefik/whoami"
+    networks:
+      - "cloudflared"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami.rule=Host(`whoami.${NETWORK_DOCKER_IP}.nip.io`)"
+      - "traefik.http.routers.whoami.entrypoints=web"
+
+  homeassistant:
+    restart: unless-stopped
+    image: homeassistant/home-assistant
+    privileged: true
+    network_mode: "host"
+    container_name: homeassistant
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+      - /dev/ttyUSB1:/dev/ttyUSB1
+      - /dev/ttyACM0:/dev/ttyACM0
+    volumes:
+      - ./apps/homeassistant:/config
+      - /etc/localtime:/etc/localtime:ro
+      - ./data:/shared
+      - /dev/serial/by-id/:/dev/serial/by-id/
+
+    environment:
+      - "PUID=${PUID}"
+      - "PGID=${PGID}"
+      - "TZ=${TZ}"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cf-homeassistant.rule=Host(`homeassistant.${CF_DOMAIN}`)"
+      - "traefik.http.routers.cf-homeassistant.entrypoints=web"
+      - "traefik.http.services.cf-homeassistant.loadbalancer.server.port=8123"
+
   portainer:
-    restart: always
+    restart: unless-stopped
     image: "portainer/portainer-ce:2.11.1"
+    networks:
+      - "cloudflared"
     container_name: "portainer"
     command: -H unix:///var/run/docker.sock
     volumes:
@@ -45,48 +94,11 @@ services:
       - "traefik.http.routers.cf-portainer.entrypoints=web"
       - "traefik.http.services.cf-portainer.loadbalancer.server.port=9000"
 
-  cloudflared:
-    restart: always
-    container_name: cloudflared
-    image: cloudflare/cloudflared:2022.4.1
-    command: "tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}"
-
-  whoami:
-    restart: always
-    image: "traefik/whoami"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.whoami.rule=Host(`whoami.${NETWORK_DOCKER_IP}.nip.io`)"
-      - "traefik.http.routers.whoami.entrypoints=web"
-
-  homeassistant:
-    network_mode: "host"
-    container_name: homeassistant
-    restart: unless-stopped
-    image: homeassistant/home-assistant
-    devices:
-      - /dev/ttyUSB0:/dev/ttyUSB0
-      - /dev/ttyUSB1:/dev/ttyUSB1
-      - /dev/ttyACM0:/dev/ttyACM0
-    volumes:
-      - ./apps/homeassistant:/config
-      - /etc/localtime:/etc/localtime:ro
-      - ./data:/shared
-      - /dev/serial/by-id/:/dev/serial/by-id/
-    privileged: true
-    environment:
-      - "PUID=${PUID}"
-      - "PGID=${PGID}"
-      - "TZ=${TZ}"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.cf-homeassistant.rule=Host(`homeassistant.${CF_DOMAIN}`)"
-      - "traefik.http.routers.cf-homeassistant.entrypoints=web"
-      - "traefik.http.services.cf-homeassistant.loadbalancer.server.port=8123"
-
   transmission:
-    restart: always
+    restart: unless-stopped
     image: "lscr.io/linuxserver/transmission:3.00-r5-ls118"
+    networks:
+      - "cloudflared"
     environment:
       - "PUID=${PUID}"
       - "PGID=${PGID}"
@@ -99,7 +111,7 @@ services:
       - "traefik.http.routers.cf-transmission.entrypoints=web"
 
   minidlna:
-    restart: always
+    restart: unless-stopped
     networks:
       lan:
         ipv4_address: "${NETWORK_DLNA_IP}"
@@ -112,6 +124,8 @@ services:
       - "./data:/media:ro"
 
 networks:
+  cloudflared:
+    driver: bridge
   lan:
     driver: macvlan
     driver_opts:
