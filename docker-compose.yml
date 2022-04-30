@@ -48,7 +48,7 @@ services:
   cloudflared:
     restart: always
     container_name: cloudflared
-    image: cloudflare/cloudflared:2022.3.4
+    image: cloudflare/cloudflared:2022.4.1
     command: "tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}"
 
   whoami:
@@ -80,9 +80,9 @@ services:
       - "TZ=${TZ}"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.cf-portainer.rule=Host(`homeassistant.${CF_DOMAIN}`)"
-      - "traefik.http.routers.cf-portainer.entrypoints=web"
-      - "traefik.http.services.cf-portainer.loadbalancer.server.port=8123"
+      - "traefik.http.routers.cf-homeassistant.rule=Host(`homeassistant.${CF_DOMAIN}`)"
+      - "traefik.http.routers.cf-homeassistant.entrypoints=web"
+      - "traefik.http.services.cf-homeassistant.loadbalancer.server.port=8123"
 
   transmission:
     restart: always
