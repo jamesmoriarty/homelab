@@ -2,3 +2,4 @@
 acme.json
 data/
 apps/homeassistant
+apps/grafana/var/lib/grafana/
