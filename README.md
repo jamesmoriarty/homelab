@@ -4,6 +4,7 @@
 
 * Cloudflared
 * Traefik
+* Grafana w/ Loki
 * Home Assistant
 * Portainer
 * Transmission
