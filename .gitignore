@@ -1,5 +1,5 @@
 .env
 acme.json
-data/
+media/
 apps/homeassistant
 apps/grafana/var/lib/grafana/

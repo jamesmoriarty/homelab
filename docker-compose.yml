@@ -121,7 +121,6 @@ services:
     volumes:
       - ./apps/homeassistant:/config
       - /etc/localtime:/etc/localtime:ro
-      - ./data:/shared
       - /dev/serial/by-id/:/dev/serial/by-id/
     environment:
       - "PUID=${PUID}"
@@ -158,7 +157,7 @@ services:
       - "PUID=${PUID}"
       - "PGID=${PGID}"
     volumes:
-      - "./data:/downloads:rw"
+      - "./media:/downloads:rw"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.cf-transmission.rule=Host(`transmission.${CF_DOMAIN}`)"
@@ -176,7 +175,7 @@ services:
       - "PGID=${PGID}"
       - "MINIDLNA_MEDIA_DIR=/media"
     volumes:
-      - "./data:/media:ro"
+      - "./media:/media:ro"
 
 networks:
   cloudflared:
