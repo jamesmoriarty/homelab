@@ -6,6 +6,24 @@ x-logging: &logging
     options:
       loki-url: "http://localhost:3100/loki/api/v1/push"
 
+networks:
+  cloudflared:
+    driver: bridge
+  loki:
+    driver: bridge
+  jaeger:
+    driver: bridge    
+  lan:
+    driver: macvlan
+    driver_opts:
+      parent: "${NETWORK_ADAPTER}"
+    ipam:
+      config:
+        - subnet: "${NETWORK_SUBNET}"
+
+volumes:
+  portainer_data:
+
 services:
   traefik:
     <<: *logging
@@ -13,6 +31,7 @@ services:
     image: "traefik:v2.6.3"
     networks:
       - "cloudflared"
+      - "jaeger"
     container_name: "traefik"
     command:
       - "--api.dashboard=true"
@@ -24,6 +43,7 @@ services:
       - "--certificatesresolvers.leresolver.acme.email=${EMAIL}"
       - "--certificatesresolvers.leresolver.acme.storage=./acme.json"
       - "--certificatesresolvers.leresolver.acme.dnsChallenge.provider=route53"
+      - "--tracing.jaeger.localAgentHostPort=jaeger:6831"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dashboard.rule=Host(`traefik.${CF_DOMAIN}`)"
@@ -39,6 +59,15 @@ services:
       - "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}"
       - "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}"
       - "AWS_HOSTED_ZONE_ID=${AWS_HOSTED_ZONE_ID}"
+
+  jaeger:
+    <<: *logging
+    image: "jaegertracing/all-in-one:latest"
+    networks:
+      - "jaeger"
+    ports:
+      - "6831:6831/udp"
+      - "16686:16686"
 
   cloudflared:
     <<: *logging
@@ -72,11 +101,7 @@ services:
     volumes:
       - "/var/log:/var/log"
       - "/var/lib/docker/containers:/var/lib/docker/containers:ro"
-      - "./apps/promtail/etc/promtail/promtail-config.yaml:/etc/promtail/promtail-config.yaml"
-    logging:
-      driver: loki
-      options:
-        loki-url: "http://localhost:3100/loki/api/v1/push"
+      # - "./apps/promtail/etc/promtail/promtail-config.yaml:/etc/promtail/promtail-config.yaml"
 
   # docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
   grafana:
@@ -86,6 +111,7 @@ services:
     networks:
       - "cloudflared"
       - "loki"
+      - "jaeger"
     user: "${PUID}"
     volumes:
       - "./apps/grafana/var/lib/grafana:/var/lib/grafana"
@@ -184,19 +210,3 @@ services:
       - "MINIDLNA_MEDIA_DIR=/media"
     volumes:
       - "./media:/media:ro"
-
-networks:
-  cloudflared:
-    driver: bridge
-  loki:
-    driver: bridge
-  lan:
-    driver: macvlan
-    driver_opts:
-      parent: "${NETWORK_ADAPTER}"
-    ipam:
-      config:
-        - subnet: "${NETWORK_SUBNET}"
-
-volumes:
-  portainer_data:
