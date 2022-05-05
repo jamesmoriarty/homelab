@@ -72,7 +72,7 @@ services:
     volumes:
       - "/var/log:/var/log"
       - "/var/lib/docker/containers:/var/lib/docker/containers:ro"
-      - "./app/promtail/etc/promtail/promtail-config.yaml:/etc/promtail/promtail-config.yaml"
+      - "./apps/promtail/etc/promtail/promtail-config.yaml:/etc/promtail/promtail-config.yaml"
     logging:
       driver: loki
       options:
