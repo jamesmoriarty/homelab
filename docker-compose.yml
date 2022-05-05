@@ -1,7 +1,14 @@
-version: "3.3"
+version: "3.4"
+
+x-logging: &logging
+  logging:
+    driver: loki
+    options:
+      loki-url: "http://localhost:3100/loki/api/v1/push"
 
 services:
   traefik:
+    <<: *logging
     restart: unless-stopped
     image: "traefik:v2.6.3"
     networks:
@@ -34,6 +41,7 @@ services:
       - "AWS_HOSTED_ZONE_ID=${AWS_HOSTED_ZONE_ID}"
 
   cloudflared:
+    <<: *logging
     restart: unless-stopped
     image: cloudflare/cloudflared:2022.4.1
     networks:
@@ -41,12 +49,9 @@ services:
       - "loki"
     container_name: cloudflared
     command: "tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}"
-    logging:
-      driver: loki
-      options:
-        loki-url: "http://localhost:3100/loki/api/v1/push"
 
   loki:
+    <<: *logging
     restart: unless-stopped
     image: grafana/loki:2.5.0
     networks:
@@ -55,12 +60,9 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
     ports:
       - "3100:3100"
-    logging:
-      driver: loki
-      options:
-        loki-url: "http://localhost:3100/loki/api/v1/push"
 
   promtail:
+    <<: *logging
     restart: unless-stopped
     image: grafana/promtail:2.5.0
     networks:
@@ -78,6 +80,7 @@ services:
 
   # docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
   grafana:
+    <<: *logging
     restart: unless-stopped
     image: grafana/grafana-oss
     networks:
@@ -109,6 +112,7 @@ services:
       - "traefik.http.routers.whoami.entrypoints=web"
 
   homeassistant:
+    <<: *logging
     restart: unless-stopped
     image: homeassistant/home-assistant
     privileged: true
@@ -133,10 +137,12 @@ services:
       - "traefik.http.services.cf-homeassistant.loadbalancer.server.port=8123"
 
   portainer:
+    <<: *logging
     restart: unless-stopped
     image: "portainer/portainer-ce:2.11.1"
     networks:
       - "cloudflared"
+      - "loki"
     container_name: "portainer"
     command: -H unix:///var/run/docker.sock
     volumes:
@@ -149,10 +155,12 @@ services:
       - "traefik.http.services.cf-portainer.loadbalancer.server.port=9000"
 
   transmission:
+    <<: *logging
     restart: unless-stopped
     image: "lscr.io/linuxserver/transmission:3.00-r5-ls118"
     networks:
       - "cloudflared"
+      - "loki"
     environment:
       - "PUID=${PUID}"
       - "PGID=${PGID}"
