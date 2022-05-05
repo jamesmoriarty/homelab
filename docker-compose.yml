@@ -65,14 +65,16 @@ services:
     image: "jaegertracing/all-in-one:latest"
     networks:
       - "jaeger"
-    ports:
-      - "6831:6831/udp"
-      - "16686:16686"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cf-jaeger.rule=Host(`jaeger.${CF_DOMAIN}`)"
+      - "traefik.http.routers.cf-jaeger.entrypoints=web"
+      - "traefik.http.services.cf-jaeger.loadbalancer.server.port=16686"
 
   cloudflared:
     <<: *logging
     restart: unless-stopped
-    image: cloudflare/cloudflared:2022.4.1
+    image: cloudflare/cloudflared:2022.5.0
     networks:
       - "cloudflared"
       - "loki"
@@ -101,7 +103,6 @@ services:
     volumes:
       - "/var/log:/var/log"
       - "/var/lib/docker/containers:/var/lib/docker/containers:ro"
-      # - "./apps/promtail/etc/promtail/promtail-config.yaml:/etc/promtail/promtail-config.yaml"
 
   # docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
   grafana:
