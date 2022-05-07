@@ -78,8 +78,11 @@ services:
     networks:
       - "cloudflared"
       - "loki"
+    user: "root"
     container_name: cloudflared
-    command: "tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}"
+    volumes:
+      - "./apps/cloudflared/etc/cloudflared:/root/.cloudflared/"
+    command: "tunnel --config /root/.cloudflared/config.yml run ${CF_TUNNEL}"
 
   loki:
     <<: *logging

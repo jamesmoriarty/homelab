@@ -3,3 +3,4 @@ acme.json
 media/
 apps/homeassistant
 apps/grafana/var/lib/grafana/
+apps/cloudflared
